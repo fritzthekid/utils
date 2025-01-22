@@ -25,12 +25,12 @@ mkdir -p ${TMPDIRNAME}
 outfilename=$2
 
 count=1
-
-pdfseparate -f $count -l $count $1 ${TMPDIRNAME}/${count}_l.pdf
+count0=$(printf %03d $count)
+pdfseparate -f $count -l $count $1 ${TMPDIRNAME}/${count0}_l.pdf
 RETCODE=$?
 while [[ $RETCODE -eq 0 ]]
 do
-    pdfseparate -f $count -l $count $2 ${TMPDIRNAME}/${count}_r.pdf
+    pdfseparate -f $count -l $count $2 ${TMPDIRNAME}/${count0}_r.pdf
     if [[ $? -ne 0 ]]
     then
 	echo "$2 has less page than $1 ?"
@@ -38,7 +38,8 @@ do
 	break
     fi
     count=$[$(echo $count) + 1]
-    pdfseparate -f $count -l $count $1 ${TMPDIRNAME}/${count}_l.pdf 2> ${TMPDIRNAME}/return.txt
+    count0=$(printf %03d $count)
+    pdfseparate -f $count -l $count $1 ${TMPDIRNAME}/${count0}_l.pdf 2> ${TMPDIRNAME}/return.txt
     RETCODE=$?
     if [[ $RETCODE -ne 99 ]]; then
 	cat ${TMPDIRNAME}/return.txt
