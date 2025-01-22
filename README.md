@@ -5,12 +5,13 @@
 Reason behind the tool, I could not find a proper tool to do a simple ocr on a larger pdf to "text" or to "searchable pdf" 
 
 ~~~
-$ ocr.sh -h
+$ ocr.sh
 usage ocr.sh input.pdf output [postfix]
           postfix: pdf or txt (default)]
 $ # or
 $ ocr.sh input.pdf output txt | pdf [eng] # last argument any language, default language german: deu
 ~~~
+The too does not support options only arguments
 
 ## Split and Join two single sided scanns to one double sided scan
 

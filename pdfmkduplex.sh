@@ -26,11 +26,11 @@ outfilename=$2
 
 count=1
 
-pdfseparate -f $count -l $count $1 ${TMPDIRNAME}/${count}_l
+pdfseparate -f $count -l $count $1 ${TMPDIRNAME}/${count}_l.pdf
 RETCODE=$?
 while [[ $RETCODE -eq 0 ]]
 do
-    pdfseparate -f $count -l $count $2 ${TMPDIRNAME}/${count}_r
+    pdfseparate -f $count -l $count $2 ${TMPDIRNAME}/${count}_r.pdf
     if [[ $? -ne 0 ]]
     then
 	echo "$2 has less page than $1 ?"
@@ -38,7 +38,7 @@ do
 	break
     fi
     count=$[$(echo $count) + 1]
-    pdfseparate -f $count -l $count $1 ${TMPDIRNAME}/${count}_l 2> ${TMPDIRNAME}/return.txt
+    pdfseparate -f $count -l $count $1 ${TMPDIRNAME}/${count}_l.pdf 2> ${TMPDIRNAME}/return.txt
     RETCODE=$?
     if [[ $RETCODE -ne 99 ]]; then
 	cat ${TMPDIRNAME}/return.txt
