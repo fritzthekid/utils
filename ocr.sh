@@ -1,55 +1,77 @@
 #!/bin/bash
 
-if [ $# \< 2 ]; then
-    echo "usage ocr.sh input.pdf output [postfix]"
-    echo "          postfix: pdf or txt (default)]"
+usage() {
+    echo "Usage: ocr.sh -i <input.pdf> -o <output> [-f <pdf|txt>] [-l <language>]"
+    echo "  -i <input.pdf>   : Input PDF file"
+    echo "  -o <output>      : Output file"
+    echo "  -f <format>      : Output format (pdf or txt, default: txt)"
+    echo "  -l <language>    : OCR language (default: deu)"
+    exit 1
+}
+
+FORMAT="txt"
+OCRLANG="-l deu"
+
+while getopts ":i:o:f:l:h" opt; do
+    case ${opt} in
+        i )
+            input_pdf=$OPTARG
+            ;;
+        o )
+            output=$OPTARG
+            ;;
+        f )
+            FORMAT=$OPTARG
+            ;;
+        l )
+            OCRLANG="-l $OPTARG"
+            ;;
+        h )
+            usage
+            ;;
+        \? )
+            echo "Invalid option: $OPTARG" 1>&2
+            usage
+            ;;
+        : )
+            echo "Invalid option: $OPTARG requires an argument" 1>&2
+            usage
+            ;;
+    esac
+done
+shift $((OPTIND -1))
+
+if [[ -z "$input_pdf" || -z "$output" ]]; then
+    usage
+fi
+
+if [ ! -e "$input_pdf" ]; then
+    echo "$input_pdf does not exist"
     exit 1
 fi
 
-if [ ! -e $1 ]; then
-    echo $1 does not exists
-    exit 1
-fi
-if [ ! -d $(dirname $2) ]; then
-    echo directory of $2 does not exists
+if [ ! -d "$(dirname "$output")" ]; then
+    echo "Directory of $output does not exist"
     exit 1
 fi
 
-if [ $# \> 2 ]; then
-    FORMAT=$3
-else
-    FORMAT="txt"
-fi
+TMPDIRNAME=$(mktemp -d /tmp/ocr-XXXXXX)
+echo "$TMPDIRNAME"
 
-if [ $# \> 3 ]; then
-    OCRLANG="-l $4"
-else
-    OCRLANG="-l deu"
-fi
+pdftoppm -png "$input_pdf" "${TMPDIRNAME}/x"
 
-TMPDIRNAME=/tmp/ocr-$$
-echo ${TMPDIRNAME}
-rm -rf ${TMPDIRNAME}
-mkdir -p ${TMPDIRNAME}
-outfilename=$2
-
-
-pdftoppm -png $1 ${TMPDIRNAME}/x
-
-for file in ${TMPDIRNAME}/x*.png; do
-    tmpoutfile=`echo $file | sed 's/\.png//'`
-    echo tmpoutfile: ${tmpoutfile}
-    echo tesseract $OCRLANG $file $tmpoutfile $3
-    tesseract $OCRLANG $file $tmpoutfile $3
+for file in "${TMPDIRNAME}/x"*.png; do
+    tmpoutfile="${file%.png}"
+    echo "Processing $file"
+    tesseract $OCRLANG "$file" "$tmpoutfile" "$FORMAT"
 done
 
-if [ "$3" == "pdf" ]; then
-    pdfunite ${TMPDIRNAME}/x-*.pdf ${outfilename}.${postfix}
-    # pdfsam ${TMPDIRNAME}/x-*.pdf 
+if [ "$FORMAT" == "pdf" ]; then
+    pdfunite "${TMPDIRNAME}/x-"*.pdf "${output}.${FORMAT}"
 else
-    cat ${TMPDIRNAME}/x-*.txt > ${outfilename}.${postfix}
+    cat "${TMPDIRNAME}/x-"*.txt > "${output}.${FORMAT}"
 fi
 
-rm -rf ${TMPDIRNAME}
+rm -rf "$TMPDIRNAME"
 
 exit 0

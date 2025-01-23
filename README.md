@@ -2,16 +2,18 @@
 
 ## ocr (optical character recognition) of a large pdf
 
-Reason behind the tool, I could not find a proper tool to do a simple ocr on a larger pdf to "text" or to "searchable pdf"
+Reason behind the tool: I could not find a proper tool to do a simple OCR on a larger PDF to "text" or to "searchable PDF".
 
 ~~~
 $ ocr.sh
-usage ocr.sh input.pdf output [postfix]
-          postfix: pdf or txt (default)]
-$ # or
-$ ocr.sh input.pdf output txt | pdf [eng] # last argument any language, default language german: deu
+Usage: ocr.sh -i <input.pdf> -o <output> [-f <pdf|txt>] [-l <language>]
+  -i <input.pdf>   : Input PDF file
+  -o <output>      : Output file
+  -f <format>      : Output format (pdf or txt, default: txt)
+  -l <language>    : OCR language (default: deu)
 ~~~
-The tool does not support options only arguments
+
+
 
 ## Split and Join two single sided scans to one double sided scan
 
