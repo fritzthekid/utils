@@ -1,11 +1,17 @@
 #!/bin/bash
 
 usage() {
-    echo "Usage: pdfmkduplex.sh -l <left.pdf> -r <right.pdf> -o <destination>"
+    echo "Usage: pdfmkduplex.sh -l <left.pdf> -r <right.pdf> -o <destination> [-R]"
+    echo "  -l <left.pdf>      : Left PDF file"
+    echo "  -r <right.pdf>     : Right PDF file"
+    echo "  -o <destination>   : Output PDF file"
+    echo "  -R                 : Reverse page order of the right PDF file"
     exit 1
 }
 
-while getopts ":l:r:o:h" opt; do
+reverse_order=false
+
+while getopts ":l:r:o:Rh" opt; do
     case ${opt} in
         l )
             left_pdf=$OPTARG
@@ -15,6 +21,9 @@ while getopts ":l:r:o:h" opt; do
             ;;
         o )
             destination=$OPTARG
+            ;;
+        R )
+            reverse_order=true
             ;;
         h )
             usage
@@ -68,8 +77,13 @@ pdfseparate -f $count -l $count "$left_pdf" "${TMPDIRNAME}/${count0}_l.pdf"
 RETCODE=$?
 
 while [[ $RETCODE -eq 0 ]]; do
-    countinv=$(( lenr + 1 - count ))
-    pdfseparate -f $countinv -l $countinv "$right_pdf" "${TMPDIRNAME}/${count0}_r.pdf"
+    if $reverse_order; then
+        countinv=$(( lenr + 1 - count ))
+        pdfseparate -f $countinv -l $countinv "$right_pdf" "${TMPDIRNAME}/${count0}_r.pdf"
+    else
+        pdfseparate -f $count -l $count "$right_pdf" "${TMPDIRNAME}/${count0}_r.pdf"
+    fi
+    
     if [[ $? -ne 0 ]]; then
         echo "$right_pdf has fewer pages than $left_pdf?"
         echo "Continuing with one more left page, but missing last $left_pdf pages"
