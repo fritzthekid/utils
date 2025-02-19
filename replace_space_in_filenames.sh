@@ -16,6 +16,12 @@ sanitize_filename() {
                     -e "s/;/$REPLACEMENT/g" \
                     -e "s/:/$REPLACEMENT/g" \
                     -e "s/\?/$REPLACEMENT/g" \
+                    -e "s/\*/star/g" \
+                    -e "s/+/$REPLACEMENT/g" \
+                    -e "s/=/$REPLACEMENT/g" \
+                    -e "s/</$REPLACEMENT/g" \
+                    -e "s/>/$REPLACEMENT/g" \
+                    -e "s/|/$REPLACEMENT/g" \
                     -e "s/!/$REPLACEMENT/g" #\
                     }
 #                     -e "s/'/-/g" \
@@ -26,12 +32,6 @@ sanitize_filename() {
 #                     -e "s/%/percent/g" # \
 # }
 #                    -e "s/#/number/g" \
-#                     -e "s/\*/star/g" \
-#                     -e "s/+/$REPLACEMENT/g" \
-#                     -e "s/=/$REPLACEMENT/g" \
-#                     -e "s/</$REPLACEMENT/g" \
-#                     -e "s/>/$REPLACEMENT/g" \
-#                     -e "s/|/$REPLACEMENT/g" \
 #                     -e "s/\\/$REPLACEMENT/g"
 # }
 
