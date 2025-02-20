@@ -4,6 +4,7 @@
 REPLACEMENT="_"
 
 # Funktion zum sicheren Umbenennen von Dateien
+# the following characters should be avoided !"#$&'()*;<=>?[\]^`{|}~ and whitespace (space, tab, newline)
 sanitize_filename() {
     echo "$1" | sed -e "s/ /$REPLACEMENT/g" \
                     -e "s/(/$REPLACEMENT/g" \
@@ -22,18 +23,18 @@ sanitize_filename() {
                     -e "s/</$REPLACEMENT/g" \
                     -e "s/>/$REPLACEMENT/g" \
                     -e "s/|/$REPLACEMENT/g" \
-                    -e "s/!/$REPLACEMENT/g" #\
+                    -e "s/&/and/g" \
+                    -e 's/\$/dollar/g' \
+                    -e 's/%/percent/g' \
+                    -e "s/'/-/g" \
+                    -e "s/\"/-/g" \
+                    -e "s/@/-/g" \
+                    -e 's/#/number/g' \
+                    -e 's/!/$REPLACEMENT/g' #\
                     }
-#                     -e "s/'/-/g" \
-#                     -e "s/\"/-/g" \
-#                     -e "s/@/-/g" \
-#                     -e "s/&/and/g" \
-#                     -e "s/\$/dollar/g" \
-#                     -e "s/%/percent/g" # \
 # }
-#                    -e "s/#/number/g" \
-#                     -e "s/\\/$REPLACEMENT/g"
 # }
+#                     -e 's/\\/$REPLACEMENT/g'
 
 # find-Befehl mit UTF-8 Unterstützung
 find . -depth | while IFS= read -r file; do
