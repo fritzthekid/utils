@@ -1,77 +1,47 @@
 #!/bin/bash
 
-usage() {
-    echo "Usage: ocr.sh -i <input.pdf> -o <output> [-f <pdf|txt>] [-l <language>]"
-    echo "  -i <input.pdf>   : Input PDF file"
-    echo "  -o <output>      : Output file"
-    echo "  -f <format>      : Output format (pdf or txt, default: txt)"
-    echo "  -l <language>    : OCR language (default: deu)"
-    exit 1
-}
+# --- Default-Werte ---
+lang="deu"
 
-FORMAT="txt"
-OCRLANG="-l deu"
-
-while getopts ":i:o:f:l:h" opt; do
-    case ${opt} in
-        i )
-            input_pdf=$OPTARG
-            ;;
-        o )
-            output=$OPTARG
-            ;;
-        f )
-            FORMAT=$OPTARG
-            ;;
-        l )
-            OCRLANG="-l $OPTARG"
-            ;;
-        h )
-            usage
-            ;;
-        \? )
-            echo "Invalid option: $OPTARG" 1>&2
-            usage
-            ;;
-        : )
-            echo "Invalid option: $OPTARG requires an argument" 1>&2
-            usage
-            ;;
+# --- Optionen parsen ---
+while [[ "$1" == -* ]]; do
+    case "$1" in
+        -l) lang="$2"; shift 2 ;;
+        *) echo "Unbekannte Option: $1"; exit 1 ;;
     esac
 done
-shift $((OPTIND -1))
 
-if [[ -z "$input_pdf" || -z "$output" ]]; then
-    usage
-fi
-
-if [ ! -e "$input_pdf" ]; then
-    echo "$input_pdf does not exist"
+# --- Argumente prüfen ---
+if [[ $# -ne 2 ]]; then
+    echo "Verwendung: $0 [-l lang] <infile.pdf> <outfile.{pdf|txt}>"
     exit 1
 fi
 
-if [ ! -d "$(dirname "$output")" ]; then
-    echo "Directory of $output does not exist"
+infile="$1"
+outfile="$2"
+ext="${outfile##*.}"
+
+# --- Dateityp prüfen ---
+if [[ ! -f "$infile" ]]; then
+    echo "Eingabedatei '$infile' existiert nicht."
     exit 1
 fi
 
-TMPDIRNAME=$(mktemp -d /tmp/ocr-XXXXXX)
-echo "$TMPDIRNAME"
-
-pdftoppm -png "$input_pdf" "${TMPDIRNAME}/x"
-
-for file in "${TMPDIRNAME}/x"*.png; do
-    tmpoutfile="${file%.png}"
-    echo "Processing $file"
-    tesseract $OCRLANG "$file" "$tmpoutfile" "$FORMAT"
-done
-
-if [ "$FORMAT" == "pdf" ]; then
-    pdfunite "${TMPDIRNAME}/x-"*.pdf "${output}.${FORMAT}"
-else
-    cat "${TMPDIRNAME}/x-"*.txt > "${output}.${FORMAT}"
-fi
-
-rm -rf "$TMPDIRNAME"
-
-exit 0
+# --- Verarbeitung starten ---
+case "$ext" in
+    pdf)
+        echo "[Info] Erzeuge durchsuchbares PDF..."
+        ocrmypdf -l "$lang" --optimize 1 --skip-text "$infile" "$outfile"
+        ;;
+    txt)
+        echo "[Info] Erzeuge durchsuchbares PDF + Textausgabe..."
+        tmp_pdf="$(mktemp --suffix=.pdf)"
+        ocrmypdf -l "$lang" --optimize 1 --skip-text "$infile" "$tmp_pdf" \
+            && pdftotext "$tmp_pdf" "$outfile" \
+            && rm -f "$tmp_pdf"
+        ;;
+    *)
+        echo "Unbekanntes Ausgabeformat: .$ext – nur .pdf oder .txt erlaubt."
+        exit 1
+        ;;
+esac
