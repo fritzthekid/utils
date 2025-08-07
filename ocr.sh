@@ -13,7 +13,7 @@ done
 
 # --- Argumente prüfen ---
 if [[ $# -ne 2 ]]; then
-    echo "Verwendung: $0 [-l lang] <infile.pdf> <outfile.{pdf|txt}>"
+    echo "Verwendung: $(basename $0) [-l lang] <infile.pdf> <outfile.{pdf|txt}>"
     exit 1
 fi
 
