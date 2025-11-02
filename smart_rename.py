@@ -9,6 +9,31 @@ import sys
 import re
 from datetime import datetime
 import os
+import readline
+
+def xxx_input_with_prefill(prompt, text=''):
+    """Input mit vorausgefülltem Text, der editiert werden kann"""
+    def hook():
+        readline.insert_text(text)
+        readline.redisplay()
+    readline.set_startup_hook(hook)
+    try:
+        result = input(prompt)
+    finally:
+        readline.set_startup_hook()
+    return result
+
+def input_with_prefill(prompt, text=''):
+    """Input mit vorausgefülltem Text, der editiert werden kann"""
+    def hook():
+        readline.insert_text(text)
+        # readline.redisplay()  # <- Diese Zeile entfernen!
+    readline.set_startup_hook(hook)
+    try:
+        result = input(prompt)
+    finally:
+        readline.set_startup_hook()
+    return result
 
 def smart_rename(filepath):
     # PDF → Bild
@@ -22,6 +47,7 @@ def smart_rename(filepath):
     text = pytesseract.image_to_string(image, lang='deu')
     
     # Datum finden
+    
     date_pattern = r'(\d{2})[./](\d{2})[./](\d{4})'
     date_match = re.search(date_pattern, text)
     
@@ -54,12 +80,26 @@ if __name__ == "__main__":
         sys.exit(1)
     
     filepath = sys.argv[1]
-    new_name = smart_rename(filepath)
+    suggested_name = smart_rename(filepath)
     
     print(f"Alt: {filepath}")
-    print(f"Neu: {new_name}")
-    
-    choice = input("Umbenennen? (j/n): ")
-    if choice.lower() == 'j':
-        os.rename(filepath, new_name)
-        print("✓ Umbenannt!")
+    print(f"Vorschlag: {suggested_name}")
+    action = input("(j/n/e):") # print()
+
+    if action.lower() == 'e':
+        # Nutzer kann den vorgeschlagenen Namen editieren
+        new_name = input_with_prefill("Neuer Name (editierbar): ", suggested_name)
+    elif action.lower() == 'j':
+        new_name = suggested_name
+    elif action.lower() == 'n':
+        new_name = None
+
+    # Prüfen ob sich etwas geändert hat
+    if new_name and new_name != filepath:
+        try:
+            os.rename(filepath, new_name)
+            print("✓ Umbenannt!")
+        except OSError as e:
+            print(f"✗ Fehler beim Umbenennen: {e}")
+    else:
+        print("Keine Änderung vorgenommen.")
