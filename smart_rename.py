@@ -37,8 +37,68 @@ def input_with_prefill(prompt, text=''):
         readline.set_startup_hook()
     return result
 
+def check_camera_exif(image):
+    """Prüft ob Kamera-EXIF-Daten vorhanden sind (= echtes Foto)"""
+    try:
+        exif = image._getexif()
+        if exif is None:
+            return False
+        
+        # Kamera-spezifische EXIF-Tags
+        # 271 = Make, 272 = Model, 37386 = FocalLength
+        camera_markers = [271, 272, 37386, 37385]  # FNumber auch
+        
+        for marker in camera_markers:
+            if marker in exif:
+                return True
+        
+        return False
+    except:
+        return False
+
+def is_document_image(text, image=None):
+    """
+    Unterscheidet Dokumente von Landschaftsfotos
+    Returns: True wenn Dokument, False wenn Foto
+    """
+    lines = [l.strip() for l in text.split('\n') if l.strip()]
+    
+    # Kriterium 1: Mindestens 3 Textzeilen
+    if len(lines) < 3:
+        return False
+    
+    # Kriterium 2: Mindestens 50 Zeichen Gesamttext
+    total_chars = sum(len(line) for line in lines)
+    if total_chars < 50:
+        return False
+    
+    # Kriterium 3: Durchschnittliche Zeilenlänge > 10 Zeichen
+    avg_line_length = total_chars / len(lines) if lines else 0
+    if avg_line_length < 10:
+        return False
+    
+    # Kriterium 4: Mindestens eine Zeile mit > 15 Zeichen
+    long_lines = [line for line in lines if len(line) > 15]
+    if len(long_lines) < 1:
+        return False
+    
+    # Kriterium 5: Wenn Image verfügbar, EXIF prüfen
+    if image is not None:
+        has_camera_exif = check_camera_exif(image)
+        
+        # Wenn Kamera-EXIF vorhanden UND wenig Text → wahrscheinlich Foto
+        if has_camera_exif and total_chars < 100:
+            return False
+        
+        # Wenn KEIN Kamera-EXIF → wahrscheinlich Scan/Screenshot
+        if not has_camera_exif:
+            return True
+    
+    # Alle Kriterien erfüllt → Dokument
+    return True
+
 def smart_rename(filepath):
-    date_str = os.path.getmtime(filepath)
+    date_str = datetime.fromtimestamp(os.path.getmtime(filepath)).strftime('%Y-%m-%d')
     dokument_title = os.path.basename(os.path.splitext(filepath)[0])
     ftitle = dokument_title
     for umlaut, replacement in umlaut_map.items():
@@ -77,12 +137,9 @@ def smart_rename(filepath):
         if magic.detect_from_filename(filepath).mime_type[:5] == "image":
             image = Image.open(filepath)
             info = image._getexif()
-            if 36868 in info:
+            if info and 36868 in info:
                 date_str = re.sub(":","-",info[36868][:10])
                 document_title = re.sub(":","",info[36868][11:])
-            # exif_date = image._getexif()[36868]
-            # if re.match("^[0-9][0-9][0-9][0-9]:[0-9][0-9]:[0-9][0-9]...",exif_date):
-            #     date_str = re.sub(":","-",image._getexif()[36868][:10])
 
     if not (ext == '.pdf' or magic.detect_from_filename(filepath).mime_type[:5] == "image"):
         return None, fname, ext
@@ -90,7 +147,10 @@ def smart_rename(filepath):
     # OCR
     text = pytesseract.image_to_string(image, lang='deu')
     
-    # Datum finden
+    if ext != ".pdf" and not is_document_image(text, image):
+        print(f"Erkannt als: FOTO (nicht genug Dokumententext)")
+        # Kein Dokument: nur EXIF-basierte Umbenennung
+        return f"{date_str}-{document_title}{ext.lower()}", fname, ext
 
     date_pattern = r'(\d{2})[./](\d{2})[./](\d{4})'
     date_match = re.search(date_pattern, text)
@@ -130,10 +190,6 @@ def main(argv):
     
     print(f"Alt: {filepath}")
     action_type = "n"
-    # if suggested_name:
-    #     print(f"Vorschlag 1: {suggested_name}")
-    # if new_file_path:
-    #     print(f"Vorschlag 2: {new_file_path}")
     if suggested_name and new_file_path:
         print(f"Vorschlag 1: {suggested_name}")
         print(f"Vorschlag 2: {new_file_path}")
